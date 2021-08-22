@@ -1,0 +1,18 @@
+name: 'Stale'
+description: 'Bumps stale issues'
+inputs:
+  token:
+    description: 'The Github Access Token'
+    required: false
+    default: ${{ github.token }}
+  days-stale:
+    description: 'How many days to wait before an issue is stale.'
+    required: false
+    default: 4
+  only-weekdays:
+    description: 'If set, only count weekdays in stale.'
+    required: false
+    default: false
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
