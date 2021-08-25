@@ -5,6 +5,7 @@ const run = async () => {
   const token = core.getInput("token");
   const daysStale = parseInt(core.getInput("days-stale"), 10);
   const onlyWeekdays = core.getInput("only-weekdays") === "true";
+  const ignoredColumns = core.getInput("ignore-columns");
   const octokit = github.getOctokit(token);
   const context = github.context;
 
@@ -42,7 +43,26 @@ const run = async () => {
     direction: "asc",
   });
 
-  issues.data.forEach((issue) => {
+  const cardsInIgnoredColumns = (
+    await Promise.all(
+      ignoredColumns.split(",").map(async (column_id) => {
+        const cards = await octokit.rest.projects.listCards({
+          column_id: parseInt(column_id, 10),
+          archived_state: "not_archived",
+          per_page: 100,
+        });
+        return cards.data.map((card) => card.content_url?.match(/\d+$/)?.[0]);
+      })
+    )
+  ).flat();
+
+  console.log("Ignoring the following cards:", cardsInIgnoredColumns);
+
+  const filteredIssues = issues.data.filter(
+    (i) => !cardsInIgnoredColumns.includes(i.number.toString())
+  );
+
+  filteredIssues.forEach((issue) => {
     const updatedAt = new Date(issue.updated_at);
     if (calculateDays(updatedAt) > daysStale) {
       console.log(

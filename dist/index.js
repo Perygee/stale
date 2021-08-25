@@ -6374,6 +6374,7 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("token");
     const daysStale = parseInt(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("days-stale"), 10);
     const onlyWeekdays = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("only-weekdays") === "true";
+    const ignoredColumns = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("ignore-columns");
     const octokit = _actions_github__WEBPACK_IMPORTED_MODULE_1__.getOctokit(token);
     const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
     const now = new Date();
@@ -6403,7 +6404,17 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         per_page: 100,
         direction: "asc",
     });
-    issues.data.forEach((issue) => {
+    const cardsInIgnoredColumns = (yield Promise.all(ignoredColumns.split(",").map((column_id) => __awaiter(void 0, void 0, void 0, function* () {
+        const cards = yield octokit.rest.projects.listCards({
+            column_id: parseInt(column_id, 10),
+            archived_state: "not_archived",
+            per_page: 100,
+        });
+        return cards.data.map((card) => { var _a, _b; return (_b = (_a = card.content_url) === null || _a === void 0 ? void 0 : _a.match(/\d+$/)) === null || _b === void 0 ? void 0 : _b[0]; });
+    })))).flat();
+    console.log("Ignoring the following cards:", cardsInIgnoredColumns);
+    const filteredIssues = issues.data.filter((i) => !cardsInIgnoredColumns.includes(i.number.toString()));
+    filteredIssues.forEach((issue) => {
         const updatedAt = new Date(issue.updated_at);
         if (calculateDays(updatedAt) > daysStale) {
             console.log(`Bumping #${issue.number} which was last updated ${issue.updated_at}.`);
