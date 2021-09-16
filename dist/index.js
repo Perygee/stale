@@ -6404,7 +6404,10 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         per_page: 100,
         direction: "asc",
     });
-    const cardsInIgnoredColumns = (yield Promise.all(ignoredColumns.split(",").map((column_id) => __awaiter(void 0, void 0, void 0, function* () {
+    const cardsInIgnoredColumns = (yield Promise.all(ignoredColumns
+        .split(",")
+        .filter((c) => !!c)
+        .map((column_id) => __awaiter(void 0, void 0, void 0, function* () {
         const cards = yield octokit.rest.projects.listCards({
             column_id: parseInt(column_id, 10),
             archived_state: "not_archived",

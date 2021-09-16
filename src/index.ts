@@ -45,14 +45,17 @@ const run = async () => {
 
   const cardsInIgnoredColumns = (
     await Promise.all(
-      ignoredColumns.split(",").map(async (column_id) => {
-        const cards = await octokit.rest.projects.listCards({
-          column_id: parseInt(column_id, 10),
-          archived_state: "not_archived",
-          per_page: 100,
-        });
-        return cards.data.map((card) => card.content_url?.match(/\d+$/)?.[0]);
-      })
+      ignoredColumns
+        .split(",")
+        .filter((c) => !!c)
+        .map(async (column_id) => {
+          const cards = await octokit.rest.projects.listCards({
+            column_id: parseInt(column_id, 10),
+            archived_state: "not_archived",
+            per_page: 100,
+          });
+          return cards.data.map((card) => card.content_url?.match(/\d+$/)?.[0]);
+        })
     )
   ).flat();
 
