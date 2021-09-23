@@ -65,19 +65,39 @@ const run = async () => {
     (i) => !cardsInIgnoredColumns.includes(i.number.toString())
   );
 
-  filteredIssues.forEach((issue) => {
-    const updatedAt = new Date(issue.updated_at);
-    if (calculateDays(updatedAt) > daysStale) {
-      console.log(
-        `Bumping #${issue.number} which was last updated ${issue.updated_at}.`
-      );
-      octokit.rest.issues.createComment({
-        ...opts,
-        issue_number: issue.number,
-        body: `Looks like this has gone stale. Have a great day!`,
-      });
-    }
-  });
+  await Promise.all(
+    filteredIssues.map(async (issue) => {
+      // Check when the issue was last updated
+      const updatedAt = new Date(issue.updated_at);
+      if (calculateDays(updatedAt) > daysStale) {
+        // If the updated date is too far in the past, also check for
+        // a recent event (like someone moving the column of the
+        // issue)
+        const issueEvents = await octokit.rest.issues.listEvents({
+          owner: context.repo.owner,
+          repo: context.repo.repo,
+          per_page: 1,
+          issue_number: issue.number,
+        });
+        const latestEventDate = issueEvents.data[0].created_at;
+        if (
+          latestEventDate &&
+          calculateDays(new Date(latestEventDate)) > daysStale
+        ) {
+          console.log(
+            `Bumping #${issue.number} which was last updated ${issue.updated_at} and had an event on ${latestEventDate}.`
+          );
+          octokit.rest.issues.createComment({
+            ...opts,
+            issue_number: issue.number,
+            body: `Looks like issue #${
+              issue.number
+            } is stale as of ${new Date().toDateString()}. Have a great day!`,
+          });
+        }
+      }
+    })
+  );
 };
 
 run();
