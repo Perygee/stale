@@ -35,33 +35,51 @@ const run = async () => {
     repo: context.repo.repo,
   };
 
-  const issues = await octokit.rest.issues.listForRepo({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    state: "open",
-    per_page: 100,
-    direction: "asc",
-  });
+  // Get up to 500 open issues
+  const issues = (
+    await Promise.all(
+      new Array(5).fill(0).map(
+        async (_, page) =>
+          (
+            await octokit.rest.issues.listForRepo({
+              ...opts,
+              state: "open",
+              per_page: 100,
+              page,
+            })
+          ).data
+      )
+    )
+  ).flat();
 
   const cardsInIgnoredColumns = (
     await Promise.all(
       ignoredColumns
         .split(",")
         .filter((c) => !!c)
-        .map(async (column_id) => {
-          const cards = await octokit.rest.projects.listCards({
-            column_id: parseInt(column_id, 10),
-            archived_state: "not_archived",
-            per_page: 100,
-          });
-          return cards.data.map((card) => card.content_url?.match(/\d+$/)?.[0]);
-        })
+        .map(async (column_id) =>
+          // Get up to 200 unarchived cards in the column
+          (
+            await Promise.all(
+              new Array(2).fill(0).map(async (_, page) =>
+                (
+                  await octokit.rest.projects.listCards({
+                    column_id: parseInt(column_id, 10),
+                    archived_state: "not_archived",
+                    per_page: 100,
+                    page,
+                  })
+                ).data.map((card) => card.content_url?.match(/\d+$/)?.[0])
+              )
+            )
+          ).flat()
+        )
     )
   ).flat();
 
   console.log("Ignoring the following cards:", cardsInIgnoredColumns);
 
-  const filteredIssues = issues.data.filter(
+  const filteredIssues = issues.filter(
     (i) => !cardsInIgnoredColumns.includes(i.number.toString())
   );
 
