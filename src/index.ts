@@ -52,6 +52,8 @@ const run = async () => {
     )
   ).flat();
 
+  console.log(`Found ${issues.length} open issues`);
+
   const cardsInIgnoredColumns = (
     await Promise.all(
       ignoredColumns
@@ -77,7 +79,9 @@ const run = async () => {
     )
   ).flat();
 
-  console.log("Ignoring the following cards:", cardsInIgnoredColumns);
+  console.log(
+    `Ignoring the following cards: ${cardsInIgnoredColumns.join(", ")}`
+  );
 
   const filteredIssues = issues.filter(
     (i) => !cardsInIgnoredColumns.includes(i.number.toString())
