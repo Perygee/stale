@@ -6397,33 +6397,48 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         owner: context.repo.owner,
         repo: context.repo.repo,
     };
-    const issues = yield octokit.rest.issues.listForRepo({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        state: "open",
-        per_page: 100,
-        direction: "asc",
-    });
+    // Get up to 500 open issues
+    const issues = (yield Promise.all(new Array(5).fill(0).map((_, page) => __awaiter(void 0, void 0, void 0, function* () {
+        return (yield octokit.rest.issues.listForRepo(Object.assign(Object.assign({}, opts), { state: "open", per_page: 100, page }))).data;
+    })))).flat();
+    console.log(`Found ${issues.length} open issues`);
     const cardsInIgnoredColumns = (yield Promise.all(ignoredColumns
         .split(",")
         .filter((c) => !!c)
         .map((column_id) => __awaiter(void 0, void 0, void 0, function* () {
-        const cards = yield octokit.rest.projects.listCards({
-            column_id: parseInt(column_id, 10),
-            archived_state: "not_archived",
-            per_page: 100,
-        });
-        return cards.data.map((card) => { var _a, _b; return (_b = (_a = card.content_url) === null || _a === void 0 ? void 0 : _a.match(/\d+$/)) === null || _b === void 0 ? void 0 : _b[0]; });
+        // Get up to 200 unarchived cards in the column
+        return (yield Promise.all(new Array(2).fill(0).map((_, page) => __awaiter(void 0, void 0, void 0, function* () {
+            return (yield octokit.rest.projects.listCards({
+                column_id: parseInt(column_id, 10),
+                archived_state: "not_archived",
+                per_page: 100,
+                page,
+            })).data.map((card) => { var _a, _b; return (_b = (_a = card.content_url) === null || _a === void 0 ? void 0 : _a.match(/\d+$/)) === null || _b === void 0 ? void 0 : _b[0]; });
+        })))).flat();
     })))).flat();
-    console.log("Ignoring the following cards:", cardsInIgnoredColumns);
-    const filteredIssues = issues.data.filter((i) => !cardsInIgnoredColumns.includes(i.number.toString()));
-    filteredIssues.forEach((issue) => {
+    console.log(`Ignoring the following cards: ${cardsInIgnoredColumns.join(", ")}`);
+    const filteredIssues = issues.filter((i) => !cardsInIgnoredColumns.includes(i.number.toString()));
+    yield Promise.all(filteredIssues.map((issue) => __awaiter(void 0, void 0, void 0, function* () {
+        // Check when the issue was last updated
         const updatedAt = new Date(issue.updated_at);
         if (calculateDays(updatedAt) > daysStale) {
-            console.log(`Bumping #${issue.number} which was last updated ${issue.updated_at}.`);
-            octokit.rest.issues.createComment(Object.assign(Object.assign({}, opts), { issue_number: issue.number, body: `Looks like this has gone stale. Have a great day!` }));
+            // If the updated date is too far in the past, also check for
+            // a recent event (like someone moving the column of the
+            // issue)
+            const issueEvents = yield octokit.rest.issues.listEvents({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 1,
+                issue_number: issue.number,
+            });
+            const latestEventDate = issueEvents.data[0].created_at;
+            if (latestEventDate &&
+                calculateDays(new Date(latestEventDate)) > daysStale) {
+                console.log(`Bumping #${issue.number} which was last updated ${issue.updated_at} and had an event on ${latestEventDate}.`);
+                octokit.rest.issues.createComment(Object.assign(Object.assign({}, opts), { issue_number: issue.number, body: `Looks like issue #${issue.number} is stale as of ${new Date().toDateString()}. Have a great day!` }));
+            }
         }
-    });
+    })));
 });
 run();
 
