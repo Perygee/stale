@@ -45,7 +45,7 @@ const run = async () => {
               ...opts,
               state: "open",
               per_page: 100,
-              page,
+              page: page + 1, // pages are 1 indexed
             })
           ).data
       )
@@ -69,7 +69,7 @@ const run = async () => {
                     column_id: parseInt(column_id, 10),
                     archived_state: "not_archived",
                     per_page: 100,
-                    page,
+                    page: page + 1, // pages are 1 indexed
                   })
                 ).data.map((card) => card.content_url?.match(/\d+$/)?.[0])
               )

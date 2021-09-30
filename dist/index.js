@@ -6399,7 +6399,7 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     };
     // Get up to 500 open issues
     const issues = (yield Promise.all(new Array(5).fill(0).map((_, page) => __awaiter(void 0, void 0, void 0, function* () {
-        return (yield octokit.rest.issues.listForRepo(Object.assign(Object.assign({}, opts), { state: "open", per_page: 100, page }))).data;
+        return (yield octokit.rest.issues.listForRepo(Object.assign(Object.assign({}, opts), { state: "open", per_page: 100, page: page + 1 }))).data;
     })))).flat();
     console.log(`Found ${issues.length} open issues`);
     const cardsInIgnoredColumns = (yield Promise.all(ignoredColumns
@@ -6412,7 +6412,7 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
                 column_id: parseInt(column_id, 10),
                 archived_state: "not_archived",
                 per_page: 100,
-                page,
+                page: page + 1, // pages are 1 indexed
             })).data.map((card) => { var _a, _b; return (_b = (_a = card.content_url) === null || _a === void 0 ? void 0 : _a.match(/\d+$/)) === null || _b === void 0 ? void 0 : _b[0]; });
         })))).flat();
     })))).flat();
