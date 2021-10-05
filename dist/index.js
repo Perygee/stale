@@ -6377,6 +6377,7 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     const ignoredColumns = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("ignore-columns");
     const octokit = _actions_github__WEBPACK_IMPORTED_MODULE_1__.getOctokit(token);
     const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
+    console.table({ daysStale, onlyWeekdays, ignoredColumns });
     const now = new Date();
     const calculateDays = (d) => {
         if (!onlyWeekdays) {

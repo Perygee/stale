@@ -9,6 +9,8 @@ const run = async () => {
   const octokit = github.getOctokit(token);
   const context = github.context;
 
+  console.table({ daysStale, onlyWeekdays, ignoredColumns });
+
   const now = new Date();
 
   const calculateDays = (d: Date): number => {
