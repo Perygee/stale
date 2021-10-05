@@ -6419,7 +6419,9 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     })))).flat();
     console.log(`Ignoring the following cards: ${cardsInIgnoredColumns.join(", ")}`);
     const filteredIssues = issues.filter((i) => !cardsInIgnoredColumns.includes(i.number.toString()));
+    console.log(`Inspecting the following cards: ${filteredIssues.join(", ")}`);
     yield Promise.all(filteredIssues.map((issue) => __awaiter(void 0, void 0, void 0, function* () {
+        var _a;
         // Check when the issue was last updated
         const updatedAt = new Date(issue.updated_at);
         if (calculateDays(updatedAt) > daysStale) {
@@ -6431,10 +6433,17 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
                 repo: context.repo.repo,
                 per_page: 1,
                 issue_number: issue.number,
+                headers: {
+                    // This header is required to get "project card moved" events
+                    // https://developer.github.com/changes/2018-09-05-project-card-events/
+                    Accept: "application/vnd.github.starfox-preview+json",
+                },
             });
-            const latestEventDate = issueEvents.data[0].created_at;
-            if (latestEventDate &&
-                calculateDays(new Date(latestEventDate)) > daysStale) {
+            const latestEventDate = (_a = issueEvents.data[0]) === null || _a === void 0 ? void 0 : _a.created_at;
+            // If there's not a latest event OR if the latest event is greater than daysStale
+            if (latestEventDate == null ||
+                (latestEventDate &&
+                    calculateDays(new Date(latestEventDate)) > daysStale)) {
                 console.log(`Bumping #${issue.number} which was last updated ${issue.updated_at} and had an event on ${latestEventDate}.`);
                 octokit.rest.issues.createComment(Object.assign(Object.assign({}, opts), { issue_number: issue.number, body: `Looks like issue #${issue.number} is stale as of ${new Date().toDateString()}. Have a great day!` }));
             }

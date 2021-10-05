@@ -89,6 +89,8 @@ const run = async () => {
     (i) => !cardsInIgnoredColumns.includes(i.number.toString())
   );
 
+  console.log(`Inspecting the following cards: ${filteredIssues.join(", ")}`);
+
   await Promise.all(
     filteredIssues.map(async (issue) => {
       // Check when the issue was last updated
@@ -102,11 +104,19 @@ const run = async () => {
           repo: context.repo.repo,
           per_page: 1,
           issue_number: issue.number,
+          headers: {
+            // This header is required to get "project card moved" events
+            // https://developer.github.com/changes/2018-09-05-project-card-events/
+            Accept: "application/vnd.github.starfox-preview+json",
+          },
         });
-        const latestEventDate = issueEvents.data[0].created_at;
+        const latestEventDate = issueEvents.data[0]?.created_at;
+
+        // If there's not a latest event OR if the latest event is greater than daysStale
         if (
-          latestEventDate &&
-          calculateDays(new Date(latestEventDate)) > daysStale
+          latestEventDate == null ||
+          (latestEventDate &&
+            calculateDays(new Date(latestEventDate)) > daysStale)
         ) {
           console.log(
             `Bumping #${issue.number} which was last updated ${issue.updated_at} and had an event on ${latestEventDate}.`
