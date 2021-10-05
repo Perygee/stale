@@ -89,7 +89,11 @@ const run = async () => {
     (i) => !cardsInIgnoredColumns.includes(i.number.toString())
   );
 
-  console.log(`Inspecting the following cards: ${filteredIssues.join(", ")}`);
+  console.log(
+    `Inspecting the following cards: ${filteredIssues
+      .map((i) => i.number)
+      .join(", ")}`
+  );
 
   await Promise.all(
     filteredIssues.map(async (issue) => {
@@ -119,7 +123,9 @@ const run = async () => {
             calculateDays(new Date(latestEventDate)) > daysStale)
         ) {
           console.log(
-            `Bumping #${issue.number} which was last updated ${issue.updated_at} and had an event on ${latestEventDate}.`
+            `Bumping #${issue.number} which was last updated ${
+              issue.updated_at
+            } and had an event on ${latestEventDate ?? "never"}.`
           );
           octokit.rest.issues.createComment({
             ...opts,

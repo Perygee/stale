@@ -6419,7 +6419,9 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     })))).flat();
     console.log(`Ignoring the following cards: ${cardsInIgnoredColumns.join(", ")}`);
     const filteredIssues = issues.filter((i) => !cardsInIgnoredColumns.includes(i.number.toString()));
-    console.log(`Inspecting the following cards: ${filteredIssues.join(", ")}`);
+    console.log(`Inspecting the following cards: ${filteredIssues
+        .map((i) => i.number)
+        .join(", ")}`);
     yield Promise.all(filteredIssues.map((issue) => __awaiter(void 0, void 0, void 0, function* () {
         var _a;
         // Check when the issue was last updated
@@ -6444,7 +6446,7 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
             if (latestEventDate == null ||
                 (latestEventDate &&
                     calculateDays(new Date(latestEventDate)) > daysStale)) {
-                console.log(`Bumping #${issue.number} which was last updated ${issue.updated_at} and had an event on ${latestEventDate}.`);
+                console.log(`Bumping #${issue.number} which was last updated ${issue.updated_at} and had an event on ${latestEventDate !== null && latestEventDate !== void 0 ? latestEventDate : "never"}.`);
                 octokit.rest.issues.createComment(Object.assign(Object.assign({}, opts), { issue_number: issue.number, body: `Looks like issue #${issue.number} is stale as of ${new Date().toDateString()}. Have a great day!` }));
             }
         }
