@@ -103,18 +103,25 @@ const run = async () => {
         // If the updated date is too far in the past, also check for
         // a recent event (like someone moving the column of the
         // issue)
-        const issueEvents = await octokit.rest.issues.listEvents({
-          owner: context.repo.owner,
-          repo: context.repo.repo,
-          per_page: 1,
-          issue_number: issue.number,
-          headers: {
-            // This header is required to get "project card moved" events
-            // https://developer.github.com/changes/2018-09-05-project-card-events/
-            Accept: "application/vnd.github.starfox-preview+json",
-          },
-        });
-        const latestEventDate = issueEvents.data[0]?.created_at;
+        const result = await octokit.graphql(
+          `
+          query LastEvent($owner: String!, $repo: String!, $number: Int!) {
+            repository(owner: $owner, name: $repo) {
+              issue(number: $number) {
+                timelineItems(last: 1) {
+                  updatedAt
+                }
+              }
+            }
+          }
+        `,
+          { ...opts, number: issue.number }
+        );
+
+        console.log(JSON.stringify(result));
+
+        const latestEventDate =
+          result?.data?.repository?.issue?.timelineItems?.[0]?.updatedAt;
 
         // If there's not a latest event OR if the latest event is greater than daysStale
         if (
