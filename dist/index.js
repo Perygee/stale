@@ -6423,25 +6423,28 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         .map((i) => i.number)
         .join(", ")}`);
     yield Promise.all(filteredIssues.map((issue) => __awaiter(void 0, void 0, void 0, function* () {
-        var _a;
+        var _a, _b, _c, _d, _e;
         // Check when the issue was last updated
         const updatedAt = new Date(issue.updated_at);
         if (calculateDays(updatedAt) > daysStale) {
             // If the updated date is too far in the past, also check for
             // a recent event (like someone moving the column of the
             // issue)
-            const issueEvents = yield octokit.rest.issues.listEvents({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                per_page: 1,
-                issue_number: issue.number,
-                headers: {
-                    // This header is required to get "project card moved" events
-                    // https://developer.github.com/changes/2018-09-05-project-card-events/
-                    Accept: "application/vnd.github.starfox-preview+json",
-                },
-            });
-            const latestEventDate = (_a = issueEvents.data[0]) === null || _a === void 0 ? void 0 : _a.created_at;
+            const result = yield octokit.graphql(`
+          query LastEvent($owner: String!, $repo: String!, $number: Int!) {
+            repository(owner: $owner, name: $repo) {
+              issue(number: $number) {
+                timelineItems(last: 1) {
+                  updatedAt
+                }
+              }
+            }
+          }
+        `, Object.assign(Object.assign({}, opts), { number: issue.number }));
+            console.log(JSON.stringify(result));
+            const latestEventDate = 
+            // @ts-ignore since it's substantially more work to add real typings
+            (_e = (_d = (_c = (_b = (_a = result === null || result === void 0 ? void 0 : result.data) === null || _a === void 0 ? void 0 : _a.repository) === null || _b === void 0 ? void 0 : _b.issue) === null || _c === void 0 ? void 0 : _c.timelineItems) === null || _d === void 0 ? void 0 : _d[0]) === null || _e === void 0 ? void 0 : _e.updatedAt;
             // If there's not a latest event OR if the latest event is greater than daysStale
             if (latestEventDate == null ||
                 (latestEventDate &&

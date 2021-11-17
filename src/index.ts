@@ -121,6 +121,7 @@ const run = async () => {
         console.log(JSON.stringify(result));
 
         const latestEventDate =
+          // @ts-ignore since it's substantially more work to add real typings
           result?.data?.repository?.issue?.timelineItems?.[0]?.updatedAt;
 
         // If there's not a latest event OR if the latest event is greater than daysStale
