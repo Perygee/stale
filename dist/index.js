@@ -6423,7 +6423,7 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         .map((i) => i.number)
         .join(", ")}`);
     yield Promise.all(filteredIssues.map((issue) => __awaiter(void 0, void 0, void 0, function* () {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c;
         // Check when the issue was last updated
         const updatedAt = new Date(issue.updated_at);
         if (calculateDays(updatedAt) > daysStale) {
@@ -6444,7 +6444,7 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
             console.log(JSON.stringify(result));
             const latestEventDate = 
             // @ts-ignore since it's substantially more work to add real typings
-            (_e = (_d = (_c = (_b = (_a = result === null || result === void 0 ? void 0 : result.data) === null || _a === void 0 ? void 0 : _a.repository) === null || _b === void 0 ? void 0 : _b.issue) === null || _c === void 0 ? void 0 : _c.timelineItems) === null || _d === void 0 ? void 0 : _d[0]) === null || _e === void 0 ? void 0 : _e.updatedAt;
+            (_c = (_b = (_a = result === null || result === void 0 ? void 0 : result.repository) === null || _a === void 0 ? void 0 : _a.issue) === null || _b === void 0 ? void 0 : _b.timelineItems) === null || _c === void 0 ? void 0 : _c.updatedAt;
             // If there's not a latest event OR if the latest event is greater than daysStale
             if (latestEventDate == null ||
                 (latestEventDate &&
